@@ -1,9 +1,4 @@
-![Screenshot_2021-05-09-16-47-03-420_com whatsapp w4b](https://user-images.githubusercontent.com/83899995/117570257-f687e580-b0e6-11eb-8f51-b2ae9cb20ac1.jpg)
-![Screenshot_2021-05-09-16-48-01-816_com whatsapp w4b](https://user-images.githubusercontent.com/83899995/117570264-fc7dc680-b0e6-11eb-8412-0d7ef965c687.jpg)
-![Screenshot_2021-05-09-16-50-41-806_com whatsapp w4b](https://user-images.githubusercontent.com/83899995/117570267-fdaef380-b0e6-11eb-9168-31ff50cfd7d2.jpg)
-![Screenshot_2021-05-09-16-47-03-420_com whatsapp w4b](https://user-images.githubusercontent.com/83899995/117570276-0bfd0f80-b0e7-11eb-87eb-c785dcc20159.jpg)
-![Screenshot_2021-05-09-16-48-01-816_com whatsapp w4b](https://user-images.githubusercontent.com/83899995/117570280-0e5f6980-b0e7-11eb-9292-ddbeb7a08c07.jpg)
-![Screenshot_2021-05-09-16-50-41-806_com whatsapp w4b](https://user-images.githubusercontent.com/83899995/117570282-0f909680-b0e7-11eb-9497-b2b60c25246e.jpg)
+
 # cowin-whatsapp-cloud-bot
 This bot works on free cloud server and provide vaccination center slots information on your whatsapp.
 note : I've learned coding from internet ,So no doubt this code can be optimized more. Feel free to do so according to your needs. 
@@ -69,3 +64,12 @@ Anyone who sends Twilio code to Twilio number will be connected with your cloud 
 Feel free to give suggestions for Betterment.
 
 Love You All ;)
+
+
+
+SCREENSHOTS ATTACHED BELOW
+
+
+![Screenshot_2021-05-09-16-47-03-420_com whatsapp w4b](https://user-images.githubusercontent.com/83899995/117570276-0bfd0f80-b0e7-11eb-87eb-c785dcc20159.jpg)
+![Screenshot_2021-05-09-16-48-01-816_com whatsapp w4b](https://user-images.githubusercontent.com/83899995/117570280-0e5f6980-b0e7-11eb-9292-ddbeb7a08c07.jpg)
+![Screenshot_2021-05-09-16-50-41-806_com whatsapp w4b](https://user-images.githubusercontent.com/83899995/117570282-0f909680-b0e7-11eb-9497-b2b60c25246e.jpg)
