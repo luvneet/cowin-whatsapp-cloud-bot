@@ -19,6 +19,7 @@ YOU JUST NEED TO CHANGE DATA OF CREDS.PY FILE WITH YOUR DATA .
 STEPS TO DEPLOY THE APP:
 
 PART 1 (Creating ab account on cloud server)
+
   -> Any cloud service provider will work whose data servers are in India as this https://apisetu.gov.in/public/api/cowin API have geo-fencing , so if you try with any cloud service whose IP is of outside India then it gonna block your request. 
 *HEROKU* will not work,already tried mostly everything.
 AWS works fine.
@@ -47,13 +48,14 @@ AWS works fine.
 16) Now run,gunicorn3 app:app
 
 PART 2
- -> Create an account at Twilio (https://www.twilio.com/try-twilio).
- -> Get Account Sid and Auth Token from homepage and paste it in creds file.
- -> Then go to Whatsapp (https://www.twilio.com/docs/autopilot/channels/whatsapp).
- -> Create your sandbox, go to sendbox page (https://www.twilio.com/console/sms/whatsapp/sandbox)
- -> At sendbox configuration ,put your Aws instance Public DNS at *when message comes in* feild.
- -> Add (/sms) after your public DNS in above feild.
- -> Save it
+
+ 1) Create an account at Twilio (https://www.twilio.com/try-twilio).
+ 2) Get Account Sid and Auth Token from homepage and paste it in creds file.
+ 3) Then go to Whatsapp (https://www.twilio.com/docs/autopilot/channels/whatsapp).
+ 4) Create your sandbox, go to sendbox page (https://www.twilio.com/console/sms/whatsapp/sandbox).
+ 5) At sendbox configuration ,put your Aws instance Public DNS at *when message comes in* feild.
+ 6) Add (/sms) after your public DNS in above feild.
+ 7) Save it
 
 Now You are ready to go ,your own whatsapp cloud server cowin bot is up and running.
 Anyone who sends Twilio code to Twilio number will be connected with your cloud bot and surely gets their query reply.
