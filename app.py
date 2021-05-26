@@ -14,9 +14,20 @@ working = False  # It will be used to stop user to give multiple inputs when scr
 phone_no = ''  # Phone number of user ,Initially empty.
 msg = ''  # Message send by the user ,Initially empty.
 
-with open('district_data.json', 'r') as f:
-    district_data = json.load(f)  # All district codes were already dumped in this file so no need to run API every time,revert back if you want code for getting this from SETU API.
+nothing_found_msg = "Sorry ,There is no vaccine available in your area for next 28 days.\n\nYou can try again after some time(Server data refresh every 30 min).\nOR\nYou can subscribe for this region and get notification whenever any slot is available.\nReply *Y* to subscribe"
+helpMsg = "*Welcome To Cowin-Whatsapp*\n\nWe created online web-service to provide you the latest information on your whatsapp about Vaccination center availability in your area.\nJust send us your area pin or district name.\nWe tried our best to provide you only relevant information in minimal efforts.\n\nFor any suggestions, mail : 1@myai.in\n\n~ ```Lovneet```"
 
+
+with open('pin_to_district.json', 'r') as f1:
+    pin_to_dist_data = json.load(f1)
+    f1.close()
+    
+
+with open('district_data.json', 'r') as f2:
+    district_data = json.load(f2)  # All district codes were already dumped in this file so no need to run API every time,revert back if you want code for getting this from SETU API.
+    f2.close()
+    
+    
 app = Flask(__name__)
 
 
@@ -35,15 +46,39 @@ def getDistrictCode(district_name):
 
 
 def getDates(i):
-    today = datetime.datetime.today()
-    waste_list = [today + datetime.timedelta(days=x) for x in range((i - 1) * 7)]
-    date_list = [today + datetime.timedelta(days=x) for x in range(i * 7)]
+    base = datetime.datetime.today()
+    # Get Current date
+    date_list = [base + datetime.timedelta(days=7 * m) for m in range(i)]
+    # Genrate list of dates [i] weeks
     date_str = [x.strftime("%d-%m-%Y") for x in date_list]
-    waste_str = [x.strftime("%d-%m-%Y") for x in waste_list]
-    for waste in waste_str:
-        date_str.remove(waste)
-    # Here we are returning list of dates of either 1st or 2nd or 3rd or 4th week based on the value of i.
     return date_str
+
+
+def getSession():
+    # Experimental hit & try.
+    if realTime:
+        # First try protected api
+        return 'sessions'
+    else:
+        # Then public api
+        return 'sessions/public'
+    
+
+def typeSearch():
+    # name tells about this function.
+    if is_pin:
+         # If Pin boolean is on then search should be done by pin.
+        return 'calendarByPin?pincode'
+    else:
+        # If Pin boolean is off then search should be done by district_id.
+        return 'calendarByDistrict?district_id' 
+    
+    
+ def getDataInfo():
+    if realTime:
+        return "   *REAL TIME DATA*   \n\n"
+    else:
+        return ""
 
 
 def getToday(date):
@@ -58,23 +93,16 @@ def getToday(date):
         return date
 
 
-def getAppointments(n, DIST_ID):
-    date_str = getDates(
-        n)  # Getting list of dates for nth week.(Not taking dates for full month initially just for efficient result.)
-    if n == 5:
-        # if value of n(week) exceeds 4, then returning no slots for this month and quiting the search process.
-        return 'Sorry ,There is no vaccine available in your area for next 28 days.\n\nYou can try again after some time(Server data refresh every 30 min).'
-    if is_pin:
-        # If Pin boolean is on then search should be done by pin.
-        search_type = 'calendarByPin?pincode'
-    else:
-        # If Pin boolean is off then search should be done by district_id.
-        search_type = 'calendarByDistrict?district_id'
+def getAppointments(DIST_ID):
+    global realTime
     global available
+    global working
+    
+    date_str = getDates(3)  # Getting list of dates for 3 weeks.(Just getting results for next 21 day,modify according to your need)
     date_ist = []
     try:
         for INP_DATE in date_str:  # Searching and retrieving data, date by date for given week.
-            URL = f"https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/{search_type}={DIST_ID}&date={INP_DATE}"
+            URL = f"https://cdn-api.co-vin.in/api/v2/appointment/{getSession()}/{typeSearch()}={DIST_ID}&date={INP_DATE}"
             response = requests.get(URL, headers=headers)
             if response.ok and ('centers' in json.loads(response.text)):
                 response_json = json.loads(response.text)['centers']
@@ -94,7 +122,14 @@ def getAppointments(n, DIST_ID):
                                 available['{}'.format(data['date'])].append(json_data)  # Feeding json data into json object date-wise.
             else:
                 # Returning some common errors acc to their status code.
-                if response.status_code == 400:
+                if response.status_code == 401:
+                    # Unauthenticated access error: when script fails to retreive data from protected api then try with public api.
+                    if realTime:
+                        realTime = False
+                        return getAppointments(DIST_ID)
+                    else:
+                        return 'Unauthorized Access'
+                elif response.status_code == 400:
                     return 'Invalid Pin'
                 elif response.status_code == 500:
                     return 'Internal Server Error'
@@ -113,14 +148,14 @@ def getAppointments(n, DIST_ID):
         )
         return err_str
     if not date_ist:
-        #  if date list remains empty (i.e : No slots in this week) then this function should re-run for next week (n+1 week,same district id).
-        return getAppointments(n + 1, DIST_ID)
+        #  if no slots found in date range then return nothing found message and ask for subscription of notification.
+        return nothing_found_msg
     else:
         #  sorting dates in ascending order
         dates = [datetime.datetime.strptime(ts, "%d-%m-%Y") for ts in date_ist]
         dates.sort()
         sorted_dates = [datetime.datetime.strftime(ts, "%d-%m-%Y") for ts in dates]
-        msg_str = ''  # Initially empty message string.
+        msg_str = '{}'.format(getDataInfo())  # Check wether the data is Realtime or cached.
         # Generating output reply date by date.
         for dts in sorted_dates:
             no = 0  # Just to track limits.
@@ -134,6 +169,7 @@ def getAppointments(n, DIST_ID):
                     msg_str = msg_str + "\nCenter limit reached(20)\n"
                     break  # Breaking loop so that it will not run for remaining centers.
             msg_str = msg_str + '\n'  # Just for margin & spacing.
+        msg_str = msg_str + '\nBook Now\nselfregistration.cowin.gov.in' # providing booking link in the end of message
         return msg_str  # Returning list created above in form of message.
 
 
@@ -144,6 +180,14 @@ def is_Pin(message):
         is_pin = True
     except ValueError:
         is_pin = False  # If fails then surely its not a PIN.
+        
+        
+def checkPin(msg):
+    try:
+        val = int(msg)
+        return True
+    except ValueError:
+        return False        
 
 
 @app.route("/sms", methods=['POST'])
@@ -151,7 +195,12 @@ def sms_reply():
     global working
     global phone_no
     global msg
-    """Respond to incoming calls with a simple text message."""
+    global tempData
+    global tempList
+    
+    resp = MessagingResponse()
+    
+    """ Respond to incoming messages """
     if working:  # If script is already working on previous input then give the user for atleast 5 second break( Hopefully ,meanwhile previous task should complete).
         time.sleep(5)
         reply = 'Try Again'
@@ -162,20 +211,36 @@ def sms_reply():
     working = True  # Telling script that its started working on some input so please won't take other.
     msg = request.form.get('Body')
     phone_no = request.form.get('From')
-    is_Pin(msg)  # Checking wether hte input is Pin code or District name.
-    #  Sending input data to different function accordingly.
-    if is_pin:
-        #  If input is pin ,then sending input data directly to the function.
-        reply = getAppointments(1, msg)
-    else:
-        #  If input is not a pin,then extracting district code first from input then sending it to function.
-        code = getDistrictCode(msg.title())  # Here titled input message just to capitalize 1st letter ,as data in json file for reference is in same format.
-        if code == '':
-            #  If get code function doesn't reply anything then user input may be wrong or not in Govt search list.
-            reply = "Invalid District Name"
+    if msg.title() == 'Help':
+        resp.message(helpMsg)
+        return str(resp)
+    if msg.title() == 'Mysub':
+        resp.message(getSubList(phone_no))
+        return str(resp)
+    if msg.title() == 'Cancel':
+        resp.message(cancelAll(phone_no))
+        return str(resp)
+    elif 'Cancel' in msg.title():
+        ms = msg.title()
+        cancel_id = ms.replace('Cancel', '')
+        resp.message(cancelById(phone_no, cancel_id))
+        return str(resp)
+    if checkPin(msg):
+        if len(msg) != 6:
+            resp.message('Invalid Pin\nJust Send ```help``` For Any Help.')
+            return str(resp)
         else:
-            #  Starting function with district code.
-            reply = getAppointments(1, code)
+            if not pin_dist_(msg):
+                resp.message('Invalid Pin\nJust Send ```help``` For Any Help.')
+                return str(resp)
+            pass
+    else:
+        if msg.title() != 'Y':
+            code = getDistrictCode(msg.title())
+            if code == '':
+                resp.message("Invalid District Name\nJust Send ```help``` For Any Help.")
+                return str(resp)
+    reply = getReply(phone_no, msg)
     # Create reply
     if len(reply) >= 1590:  # Twilio limit is 1600 characters/message ,so if our response message exceeds limits then sending it manually in parts under given limits.
         client = Client(ACCOUNT_SID, AUTH_TOKEN)  # As we only need to initialize client when limit exceeds, that's why we didn't initialized it above(starting).
@@ -193,11 +258,34 @@ def sms_reply():
             )
         working = False  # As work is completed .
         return ''  # Returning empty response, As we already replied to that message query in chunks.
-    resp = MessagingResponse()
+    if 'Sorry' in reply:
+        if tempList:
+            for t in tempList:
+                temp = t.split['|']
+                if phone_no == temp[0]:
+                    tempList.remove(t)
+        tempList.append(tempData)
+    tempData = ''
     resp.message(reply)
     working = False
     return str(resp)  # Replying for input message
 
 
+def sendMsg(message):
+    client = Client(account_sid, auth_token)
+    client.messages.create(
+        body=message,
+        from_='whatsapp:+14155238886',
+        to=myNo
+    )
+ 
+
+def pin_dist(pin_code):
+    for district in pin_to_dist_data:
+        if int(pin_code) in pin_to_dist_data[district]['PinCodes']:
+            return district
+    return 'Invalid pin'
+
+
 if __name__ == "__main__":
-    app.run(debug=True, host='0.0.0.0', port=8080)
+    app.run(debug=True, host='0.0.0.0', port=8080, threaded=True)
